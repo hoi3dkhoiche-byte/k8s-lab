@@ -95,25 +95,57 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup():
     global mongo_client, pg_session_factory, mysql_session_factory
-    try:
-        mongo_client = AsyncIOMotorClient(MONGO_URL)
-        logger.info("Connected to MongoDB for Products Data API")
-    except Exception as e:
-        logger.error(f"MongoDB connection error: {e}")
 
+    # 1. MongoDB / AWS DocumentDB
     try:
-        pg_engine = create_engine(POSTGRES_URL, pool_pre_ping=True)
+        docdb_ca_path = os.environ.get("DOCUMENTDB_CA_PATH", "/app/certs/global-bundle.pem")
+        is_docdb = "docdb.amazonaws.com" in MONGO_URL or os.environ.get("DOCUMENTDB_SSL", "false").lower() == "true"
+        
+        mongo_kwargs = {}
+        if is_docdb and os.path.exists(docdb_ca_path):
+            mongo_kwargs = {
+                "tls": True,
+                "tlsCAFile": docdb_ca_path,
+                "replicaSet": os.environ.get("DOCUMENTDB_REPLICA_SET", "rs0"),
+                "readPreference": "secondaryPreferred",
+                "retryWrites": False
+            }
+            logger.info("Connecting to AWS DocumentDB with TLS/SSL CA bundle...")
+        else:
+            logger.info("Connecting to MongoDB...")
+
+        mongo_client = AsyncIOMotorClient(MONGO_URL, **mongo_kwargs)
+        logger.info("Catalog Data API (MongoDB/DocumentDB) initialized")
+    except Exception as e:
+        logger.error(f"MongoDB/DocumentDB connection error: {e}")
+
+    # 2. PostgreSQL (AWS RDS / Local)
+    try:
+        pg_engine = create_engine(
+            POSTGRES_URL,
+            pool_pre_ping=True,
+            pool_size=int(os.environ.get("DB_POOL_SIZE", "10")),
+            max_overflow=int(os.environ.get("DB_MAX_OVERFLOW", "20")),
+            pool_recycle=1800
+        )
         PgBase.metadata.create_all(bind=pg_engine)
         pg_session_factory = sessionmaker(bind=pg_engine)
-        logger.info("Postgres initialized for Users Data API")
+        logger.info("Users Data API (PostgreSQL/RDS) initialized")
     except Exception as e:
-        logger.error(f"Postgres connection error: {e}")
+        logger.error(f"PostgreSQL connection error: {e}")
 
+    # 3. MySQL (AWS RDS / Local)
     try:
-        my_engine = create_engine(MYSQL_URL, pool_pre_ping=True)
+        my_engine = create_engine(
+            MYSQL_URL,
+            pool_pre_ping=True,
+            pool_size=int(os.environ.get("DB_POOL_SIZE", "10")),
+            max_overflow=int(os.environ.get("DB_MAX_OVERFLOW", "20")),
+            pool_recycle=1800
+        )
         MyBase.metadata.create_all(bind=my_engine)
         mysql_session_factory = sessionmaker(bind=my_engine)
-        logger.info("MySQL initialized for Orders Data API")
+        logger.info("Orders Data API (MySQL/RDS) initialized")
     except Exception as e:
         logger.error(f"MySQL connection error: {e}")
 

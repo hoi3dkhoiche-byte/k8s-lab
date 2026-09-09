@@ -1,0 +1,98 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: bida-seed-data
+  namespace: bida
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        app: bida-seed-data
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: seeder
+        image: python:3.10-slim
+        command:
+        - /bin/bash
+        - -c
+        - |
+          set -e
+          echo "Installing dependencies..."
+          pip install --no-cache-dir httpx redis passlib bcrypt
+          
+          echo "Downloading seed script..."
+          python -c "
+          import asyncio
+          import os
+          import httpx
+          import redis.asyncio as aioredis
+          import passlib.context
+
+          DB_API_URL = os.environ.get('DATABASE_API_URL', 'http://data-api-service:8000')
+          REDIS_URL = os.environ.get('REDIS_URL', '')
+          pwd_context = passlib.context.CryptContext(schemes=['bcrypt'], deprecated='auto')
+
+          async def main():
+              print(f'Starting seeding via Data API: {DB_API_URL}...')
+              async with httpx.AsyncClient(timeout=30.0) as client:
+                  # 1. Create Admin User
+                  print('Seeding Admin User...')
+                  user_payload = {
+                      'username': 'admin',
+                      'email': 'admin@bidacaocap.com',
+                      'password_hash': pwd_context.hash('admin123'),
+                      'full_name': 'Quản Trị Viên AWS',
+                      'role': 'admin'
+                  }
+                  try:
+                      resp = await client.post(f'{DB_API_URL}/api/db/users', json=user_payload)
+                      print('Admin user created:', resp.status_code)
+                  except Exception as e:
+                      print('Admin user check/create note:', e)
+
+                  # 2. Seed Products
+                  products = [
+                      {'name': 'Gậy Lỗ Predator SP2 Revo', 'category': 'cues', 'price': 18500000, 'stock': 10, 'is_featured': True, 'img': 'images/cue-predator-revo.jpg', 'images': ['images/cue-predator-revo.jpg'], 'desc': 'Gậy lỗ Predator SP2 Revo ngọn carbon siêu nhẹ.'},
+                      {'name': 'Gậy Lỗ Mezz AXI-151', 'category': 'cues', 'price': 14500000, 'stock': 8, 'is_featured': True, 'img': 'images/cue-mezz-axi.jpg', 'images': ['images/cue-mezz-axi.jpg'], 'desc': 'Mezz AXI-151 cân bằng hoàn hảo.'},
+                      {'name': 'Gậy Lỗ Cuetec Cynergy Breach', 'category': 'cues', 'price': 16200000, 'stock': 6, 'is_featured': True, 'img': 'images/cue-cuetec-cynergy.jpg', 'images': ['images/cue-cuetec-cynergy.jpg'], 'desc': 'Cuetec Cynergy ngọn carbon lực cực đầm.'},
+                      {'name': 'Bao Gậy Predator Urbain 2x4', 'category': 'cases', 'price': 4200000, 'stock': 15, 'is_featured': False, 'img': 'images/case-predator-urbain.jpg', 'images': ['images/case-predator-urbain.jpg'], 'desc': 'Bao gậy cao cấp chống sốc.'},
+                      {'name': 'Lơ Kamui Roku 6', 'category': 'accessories', 'price': 650000, 'stock': 50, 'is_featured': False, 'img': 'images/chalk-kamui-roku.jpg', 'images': ['images/chalk-kamui-roku.jpg'], 'desc': 'Lơ thi đấu bám bóng tối đa.'}
+                  ]
+
+                  print('Seeding Products...')
+                  created_ids = []
+                  for p in products:
+                      try:
+                          resp = await client.post(f'{DB_API_URL}/api/db/products', json=p)
+                          if resp.status_code == 200:
+                              created_ids.append((resp.json()['id'], p['stock']))
+                      except Exception as e:
+                          print('Product seed error:', e)
+
+                  # 3. Seed Redis Realtime Engine
+                  if REDIS_URL:
+                      print(f'Syncing initial stock to Redis: {REDIS_URL}...')
+                      try:
+                          extra_kwargs = {}
+                          if REDIS_URL.startswith('rediss://'):
+                              extra_kwargs['ssl_cert_reqs'] = None
+                          r = aioredis.from_url(REDIS_URL, decode_responses=True, **extra_kwargs)
+                          for pid, stock in created_ids:
+                              await r.set(f'stock:{pid}', str(stock))
+                              await r.set(f'reserved:{pid}', '0')
+                          await r.close()
+                          print('Redis realtime stock synchronized successfully!')
+                      except Exception as e:
+                          print('Redis sync error:', e)
+
+              print('Seed completed successfully!')
+
+          asyncio.run(main())
+          "
+        envFrom:
+        - configMapRef:
+            name: app-config
+        - secretRef:
+            name: app-secrets

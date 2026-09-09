@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: bida
+data:
+  # ============================================================================
+  # 1. DATABASE REST API CONFIG
+  # ============================================================================
+  DATABASE_API_URL: "http://data-api-service:8000"
+
+  # ============================================================================
+  # 2. AMAZON ELASTICACHE FOR REDIS (REAL-TIME TRADING & INVENTORY ENGINE)
+  # >>> THAY ĐỔI: Dán Primary Endpoint của cụm ElastiCache của bạn vào đây <<<
+  # Ví dụ (có TLS): rediss://master.bida-redis.xxxxxx.apse1.cache.amazonaws.com:6379/0
+  # ============================================================================
+  REDIS_URL: "rediss://YOUR-ELASTICACHE-PRIMARY-ENDPOINT.cache.amazonaws.com:6379/0"
+
+  # ============================================================================
+  # 3. AMAZON S3 & CLOUDFRONT CDN (STORAGE ẢNH SẢN PHẨM)
+  # >>> THAY ĐỔI: Điền tên Bucket S3 và AWS Region của bạn <<<
+  # ============================================================================
+  S3_BUCKET_NAME: "bida-caocap-images-prod"
+  AWS_REGION: "ap-southeast-1"
+  S3_REGION: "ap-southeast-1"
+  
+  # Nếu có tạo CloudFront CDN, dán domain vào đây (Ví dụ: https://d123456789.cloudfront.net)
+  # Nếu không có CloudFront, để trống ""
+  S3_PUBLIC_URL_PREFIX: ""
+
+  # ============================================================================
+  # 4. KAFKA EVENT STREAMING
+  # ============================================================================
+  KAFKA_BOOTSTRAP: "kafka:9092"
+
+  # ============================================================================
+  # 5. INTERNAL SERVICE URLS
+  # ============================================================================
+  USER_SERVICE_URL: "http://user-service:8000"
+  CATALOG_SERVICE_URL: "http://catalog-service:8000"
+  CART_SERVICE_URL: "http://cart-service:8000"
+  ORDER_SERVICE_URL: "http://order-service:8000"

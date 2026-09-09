@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-api-service
+  namespace: bida
+  labels:
+    app: data-api-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: data-api-service
+  template:
+    metadata:
+      labels:
+        app: data-api-service
+    spec:
+      serviceAccountName: bida-default-sa
+      containers:
+      - name: api
+        # >>> THAY ĐỔI: Dán URI ECR image của bạn <<<
+        # Ví dụ: 123456789012.dkr.ecr.ap-southeast-1.amazonaws.com/bida/data-api-service:latest
+        image: data-api-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8000
+        envFrom:
+        - configMapRef:
+            name: app-config
+        - secretRef:
+            name: app-secrets
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 15
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: data-api-service
+  namespace: bida
+spec:
+  selector:
+    app: data-api-service
+  ports:
+  - port: 8000
+    targetPort: 8000

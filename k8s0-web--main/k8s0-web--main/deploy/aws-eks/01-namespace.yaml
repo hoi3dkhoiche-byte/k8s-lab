@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: bida
+  labels:
+    app.kubernetes.io/name: bida-caocap
+    app.kubernetes.io/part-of: bida-ecommerce

@@ -70,13 +70,18 @@ class RedisRealtimeEngine:
 
     async def connect(self):
         try:
+            extra_kwargs = {}
+            if self.redis_url.startswith("rediss://"):
+                extra_kwargs["ssl_cert_reqs"] = None
+
             self.client = aioredis.from_url(
                 self.redis_url,
                 encoding="utf-8",
-                decode_responses=True
+                decode_responses=True,
+                **extra_kwargs
             )
             await self.client.ping()
-            logger.info("Connected to Redis for Real-time Trading & Inventory Engine")
+            logger.info("Connected to Redis (ElastiCache/Redis) for Real-time Trading & Inventory Engine")
         except Exception as e:
             logger.error(f"Failed to connect to Redis: {e}")
 
