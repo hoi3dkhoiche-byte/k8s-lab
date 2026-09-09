@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giỏ Hàng | Bida Cao Cấp</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { theme: { extend: { colors: { dark: '#0f0f0f', navy: '#1a1a2e', gold: '#c9a84c', 'gold-hover': '#d4a854', green: '#2d5016' }, fontFamily: { sans: ['Inter', 'sans-serif'], serif: ['Playfair Display', 'serif'] } } } }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-dark text-white pt-24 pb-16">
+
+    <!-- Navbar -->
+    <nav class="fixed top-0 left-0 right-0 glass-nav z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <a href="index.html" class="flex items-center gap-2">
+                    <span class="text-3xl text-gold"><i class="fa-solid fa-billiard"></i></span>
+                    <span class="font-serif font-bold text-2xl tracking-wider text-white">BIDA <span class="text-gold">CAO CẤP</span></span>
+                </a>
+                <a href="index.html" class="text-sm text-gray-400 hover:text-gold transition"><i class="fa-solid fa-arrow-left mr-2"></i>Tiếp tục mua sắm</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h1 class="text-3xl font-serif font-bold mb-8">Giỏ Hàng Của Bạn</h1>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8" id="cartContainer">
+            <!-- Loading -->
+            <div class="col-span-full flex justify-center py-10">
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/cart.js"></script>
+</body>
+</html>

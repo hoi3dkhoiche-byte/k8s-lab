@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thanh Toán | Bida Cao Cấp</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { theme: { extend: { colors: { dark: '#0f0f0f', navy: '#1a1a2e', gold: '#c9a84c', 'gold-hover': '#d4a854', green: '#2d5016' }, fontFamily: { sans: ['Inter', 'sans-serif'], serif: ['Playfair Display', 'serif'] } } } }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-dark text-white pt-24 pb-16">
+
+    <!-- Navbar Minimal -->
+    <nav class="fixed top-0 left-0 right-0 glass-nav z-50">
+        <div class="max-w-7xl mx-auto px-4 text-center py-5">
+            <a href="index.html" class="inline-flex items-center gap-2">
+                <span class="text-3xl text-gold"><i class="fa-solid fa-billiard"></i></span>
+                <span class="font-serif font-bold text-2xl tracking-wider text-white">BIDA <span class="text-gold">CAO CẤP</span></span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center gap-4 mb-8">
+            <a href="cart.html" class="w-10 h-10 glass rounded-full flex items-center justify-center hover:text-gold transition">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            <h1 class="text-3xl font-serif font-bold">Thanh Toán</h1>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+            <!-- Form -->
+            <div class="glass p-8 rounded-2xl">
+                <h2 class="text-xl font-bold mb-6 flex items-center gap-2"><i class="fa-regular fa-id-card text-gold"></i> Thông Tin Giao Hàng</h2>
+                <form id="checkoutForm" class="space-y-5">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Họ và tên *</label>
+                        <input type="text" id="fullName" required class="form-input w-full px-4 py-3 rounded-xl bg-dark/50">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Số điện thoại *</label>
+                        <input type="tel" id="phone" required class="form-input w-full px-4 py-3 rounded-xl bg-dark/50">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Địa chỉ nhận hàng *</label>
+                        <textarea id="address" required rows="3" class="form-input w-full px-4 py-3 rounded-xl bg-dark/50 resize-none"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Ghi chú (Tùy chọn)</label>
+                        <textarea id="note" rows="2" class="form-input w-full px-4 py-3 rounded-xl bg-dark/50 resize-none" placeholder="Lưu ý cho người giao hàng..."></textarea>
+                    </div>
+                    
+                    <h2 class="text-xl font-bold mt-10 mb-6 flex items-center gap-2"><i class="fa-solid fa-money-bill-wave text-gold"></i> Phương Thức Thanh Toán</h2>
+                    <div class="space-y-3">
+                        <label class="flex items-center p-4 border border-gold/30 rounded-xl cursor-pointer hover:bg-gold/5 transition bg-gold/10">
+                            <input type="radio" name="payment" value="cod" checked class="w-5 h-5 accent-gold">
+                            <span class="ml-3 font-medium">Thanh toán khi nhận hàng (COD)</span>
+                        </label>
+                        <label class="flex items-center p-4 border border-gray-700 rounded-xl cursor-pointer hover:bg-gold/5 transition">
+                            <input type="radio" name="payment" value="bank" class="w-5 h-5 accent-gold">
+                            <span class="ml-3 font-medium">Chuyển khoản ngân hàng</span>
+                        </label>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Summary -->
+            <div>
+                <div class="glass p-8 rounded-2xl sticky top-28">
+                    <h2 class="text-xl font-bold mb-6">Đơn Hàng Của Bạn</h2>
+                    
+                    <div id="checkoutItems" class="space-y-4 mb-6 max-h-[400px] overflow-y-auto pr-2">
+                        <div class="spinner mx-auto"></div>
+                    </div>
+                    
+                    <div class="border-t border-gray-700 pt-4 space-y-3 mb-8 text-sm">
+                        <div class="flex justify-between text-gray-300">
+                            <span>Tạm tính</span>
+                            <span id="subtotalDisplay">0đ</span>
+                        </div>
+                        <div class="flex justify-between text-gray-300">
+                            <span>Phí vận chuyển</span>
+                            <span>Miễn phí</span>
+                        </div>
+                        <div class="flex justify-between font-bold text-lg pt-3 border-t border-gray-700">
+                            <span>Tổng cộng</span>
+                            <span id="totalDisplay" class="text-gold">0đ</span>
+                        </div>
+                    </div>
+                    
+                    <button id="submitOrderBtn" class="btn-primary w-full py-4 rounded-xl font-bold text-lg uppercase tracking-wide flex justify-center items-center gap-2">
+                        Xác Nhận Đặt Hàng <i class="fa-solid fa-check"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="glass p-10 rounded-2xl max-w-md w-full text-center animate-slide-up border-green-500/30">
+            <div class="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fa-solid fa-check text-4xl text-green-400"></i>
+            </div>
+            <h2 class="text-2xl font-serif font-bold text-white mb-2">Đặt Hàng Thành Công!</h2>
+            <p class="text-gray-400 mb-8">Cảm ơn bạn đã tin tưởng mua sắm tại Bida Cao Cấp. Mã đơn hàng của bạn là <b id="orderCode" class="text-gold"></b>.</p>
+            <a href="index.html" class="btn-primary block w-full py-3 rounded-xl font-medium">Tiếp Tục Mua Sắm</a>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/checkout.js"></script>
+</body>
+</html>
