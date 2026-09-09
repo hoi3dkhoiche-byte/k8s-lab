@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tất Cả Sản Phẩm | Bida Cao Cấp</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: '#0f0f0f',
+                        navy: '#1a1a2e',
+                        gold: '#c9a84c',
+                        'gold-hover': '#d4a854',
+                        green: '#2d5016'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-dark text-white pt-24 pb-16 min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <nav class="fixed top-0 left-0 right-0 glass-nav z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <!-- Logo -->
+                <a href="index.html" class="flex items-center gap-2">
+                    <span class="text-3xl text-gold"><i class="fa-solid fa-billiard"></i></span>
+                    <span class="font-serif font-bold text-2xl tracking-wider text-white">BIDA <span class="text-gold">CAO CẤP</span></span>
+                </a>
+
+                <!-- Desktop Menu -->
+                <div class="hidden md:flex space-x-8">
+                    <a href="index.html" class="text-white hover:text-gold transition">Trang chủ</a>
+                    <a href="products.html" class="text-gold font-semibold transition">Tất cả sản phẩm</a>
+                    <a href="index.html#products" class="text-white hover:text-gold transition">Nổi bật</a>
+                    <a href="index.html#about" class="text-white hover:text-gold transition">Về chúng tôi</a>
+                    <a href="index.html#contact" class="text-white hover:text-gold transition">Liên hệ</a>
+                </div>
+
+                <!-- Icons & Actions -->
+                <div class="flex items-center space-x-6">
+                    <a href="cart.html" class="relative text-white hover:text-gold transition">
+                        <i class="fa-solid fa-shopping-cart text-xl"></i>
+                        <span id="cartBadge" class="cart-badge hidden">0</span>
+                    </a>
+
+                    <div class="relative group" id="userMenu">
+                        <a href="login.html" id="loginLink" class="text-white hover:text-gold transition">
+                            <i class="fa-regular fa-user text-xl"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full mt-4">
+        
+        <!-- Breadcrumb -->
+        <nav class="text-sm text-gray-400 mb-6 flex items-center gap-2">
+            <a href="index.html" class="hover:text-gold">Trang chủ</a>
+            <i class="fa-solid fa-chevron-right text-xs"></i>
+            <span class="text-gold">Tất cả sản phẩm</span>
+        </nav>
+
+        <!-- Page Header Banner -->
+        <div class="glass p-8 md:p-10 rounded-2xl mb-10 relative overflow-hidden bg-navy/40 border border-gold/20">
+            <div class="relative z-10 max-w-2xl">
+                <span class="text-xs uppercase tracking-widest text-gold font-bold mb-2 inline-block">Danh Mục Hoàn Chỉnh</span>
+                <h1 class="text-3xl md:text-4xl font-serif font-bold text-white mb-3">Tất Cả Sản Phẩm Của Sàn</h1>
+                <p class="text-gray-300 text-sm md:text-base leading-relaxed">
+                    Khám phá đầy đủ các dòng gậy bida lỗ cao cấp, phụ kiện cơ thủ chuyên nghiệp và bao gậy chính hãng nhập khẩu từ Predator, Mezz, Cuetec...
+                </p>
+            </div>
+            <div class="absolute -right-10 -bottom-10 w-72 h-72 bg-gold/10 rounded-full blur-3xl pointer-events-none"></div>
+        </div>
+
+        <!-- Filter & Search Bar -->
+        <div class="glass p-5 rounded-2xl mb-8 flex flex-col lg:flex-row gap-4 justify-between items-stretch lg:items-center bg-navy/20 border border-gold/20">
+            <!-- Search Input -->
+            <div class="relative flex-grow max-w-md">
+                <input type="text" id="catalogSearch" placeholder="Tìm kiếm gậy bida, phụ kiện..." class="form-input w-full pl-10 pr-4 py-2.5 rounded-xl text-sm" onkeydown="if(event.key === 'Enter') applyFilters()">
+                <button onclick="applyFilters()" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gold">
+                    <i class="fa-solid fa-search"></i>
+                </button>
+            </div>
+
+            <!-- Filter Controls -->
+            <div class="flex flex-wrap items-center gap-3">
+                <!-- Category Tabs -->
+                <div class="flex gap-2 overflow-x-auto pb-1" id="categoryTabs">
+                    <button data-cat="all" onclick="setCategory('all')" class="px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap btn-primary transition">Tất cả</button>
+                    <button data-cat="cues" onclick="setCategory('cues')" class="px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap bg-white/5 border border-gray-700 text-gray-300 hover:border-gold transition">Gậy Pool</button>
+                    <button data-cat="accessories" onclick="setCategory('accessories')" class="px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap bg-white/5 border border-gray-700 text-gray-300 hover:border-gold transition">Phụ kiện</button>
+                    <button data-cat="cases" onclick="setCategory('cases')" class="px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap bg-white/5 border border-gray-700 text-gray-300 hover:border-gold transition">Bao & Hộp</button>
+                </div>
+
+                <!-- Sort Dropdown -->
+                <div class="flex items-center gap-2 ml-auto">
+                    <span class="text-xs text-gray-400 whitespace-nowrap hidden sm:inline">Sắp xếp:</span>
+                    <select id="sortSelect" onchange="applySorting()" class="form-input px-3 py-2 rounded-xl text-xs bg-navy text-white cursor-pointer border border-gold/30">
+                        <option value="newest">Mới nhất</option>
+                        <option value="price_asc">Giá: Thấp đến Cao</option>
+                        <option value="price_desc">Giá: Cao đến Thấp</option>
+                        <option value="name_asc">Tên: A - Z</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Info -->
+        <div class="flex justify-between items-center mb-6 px-1">
+            <div class="text-sm text-gray-400" id="resultCount">
+                Đang tải danh sách sản phẩm...
+            </div>
+        </div>
+
+        <!-- Product Grid -->
+        <div id="allProductsGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            <!-- Rendered via JS -->
+        </div>
+
+        <!-- Loader -->
+        <div id="loadingSpinner" class="flex justify-center py-16">
+            <div class="spinner"></div>
+        </div>
+
+        <!-- Load More Button -->
+        <div class="text-center mt-12 mb-8">
+            <button id="loadMoreCatalogBtn" class="hidden btn-outline px-8 py-3 rounded-full font-semibold text-sm transition shadow-md">
+                Tải Thêm Sản Phẩm
+            </button>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-navy pt-12 pb-8 border-t border-gold/20 mt-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-gray-500">
+            <p>&copy; 2026 Bida Cao Cấp. Phân phối thiết bị bida chuyên nghiệp hàng đầu.</p>
+        </div>
+    </footer>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        let currentCat = 'all';
+        let currentSearchQuery = '';
+        let currentSort = 'newest';
+        let page = 1;
+        let totalPages = 1;
+        let loadedProducts = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            currentCat = urlParams.get('category') || 'all';
+            currentSearchQuery = urlParams.get('search') || '';
+
+            if (currentSearchQuery) {
+                document.getElementById('catalogSearch').value = currentSearchQuery;
+            }
+
+            updateCategoryTabsUI(currentCat);
+            loadCatalog(1, false);
+
+            document.getElementById('loadMoreCatalogBtn').addEventListener('click', () => {
+                if (page < totalPages) {
+                    loadCatalog(page + 1, true);
+                }
+            });
+        });
+
+        async function loadCatalog(targetPage = 1, append = false) {
+            const grid = document.getElementById('allProductsGrid');
+            const spinner = document.getElementById('loadingSpinner');
+            const loadMoreBtn = document.getElementById('loadMoreCatalogBtn');
+            const resultCount = document.getElementById('resultCount');
+
+            if (!append) {
+                grid.innerHTML = '';
+            }
+            spinner.classList.remove('hidden');
+
+            try {
+                const params = {
+                    page: targetPage,
+                    limit: 12
+                };
+                if (currentCat && currentCat !== 'all') params.category = currentCat;
+                if (currentSearchQuery) params.search = currentSearchQuery;
+
+                const response = await Api.catalog.getProducts(params);
+                spinner.classList.add('hidden');
+
+                page = response.page || targetPage;
+                totalPages = response.total_pages || 1;
+
+                if (!append) {
+                    loadedProducts = response.items || [];
+                } else {
+                    loadedProducts = loadedProducts.concat(response.items || []);
+                }
+
+                // Apply client sorting on current loaded products
+                sortProducts(loadedProducts);
+
+                renderProducts(loadedProducts, grid);
+
+                resultCount.textContent = `Hiển thị ${loadedProducts.length} trên tổng số ${response.total || loadedProducts.length} sản phẩm`;
+
+                if (page < totalPages && loadedProducts.length > 0) {
+                    loadMoreBtn.classList.remove('hidden');
+                    loadMoreBtn.textContent = `Xem thêm sản phẩm (${loadedProducts.length}/${response.total})`;
+                } else {
+                    loadMoreBtn.classList.add('hidden');
+                }
+
+            } catch (err) {
+                console.error("Lỗi tải sản phẩm:", err);
+                spinner.classList.add('hidden');
+                showToast('Lỗi khi tải danh mục sản phẩm', 'error');
+                resultCount.textContent = 'Không thể tải danh sách sản phẩm.';
+            }
+        }
+
+        function setCategory(cat) {
+            currentCat = cat;
+            updateCategoryTabsUI(cat);
+            page = 1;
+            loadCatalog(1, false);
+        }
+
+        function updateCategoryTabsUI(activeCat) {
+            const buttons = document.querySelectorAll('#categoryTabs button');
+            buttons.forEach(btn => {
+                if (btn.getAttribute('data-cat') === activeCat) {
+                    btn.className = 'px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap btn-primary transition';
+                } else {
+                    btn.className = 'px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap bg-white/5 border border-gray-700 text-gray-300 hover:border-gold transition';
+                }
+            });
+        }
+
+        function applyFilters() {
+            currentSearchQuery = document.getElementById('catalogSearch').value.trim();
+            page = 1;
+            loadCatalog(1, false);
+        }
+
+        function applySorting() {
+            currentSort = document.getElementById('sortSelect').value;
+            sortProducts(loadedProducts);
+            renderProducts(loadedProducts, document.getElementById('allProductsGrid'));
+        }
+
+        function sortProducts(list) {
+            if (currentSort === 'price_asc') {
+                list.sort((a, b) => (a.price || 0) - (b.price || 0));
+            } else if (currentSort === 'price_desc') {
+                list.sort((a, b) => (b.price || 0) - (a.price || 0));
+            } else if (currentSort === 'name_asc') {
+                list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+            }
+        }
+    </script>
+</body>
+</html>

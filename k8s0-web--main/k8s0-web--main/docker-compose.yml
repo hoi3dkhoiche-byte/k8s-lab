@@ -1,0 +1,317 @@
+services:
+  # ==========================================
+  # DATABASES & INFRASTRUCTURE
+  # ==========================================
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: bida-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin123}
+      POSTGRES_DB: ${POSTGRES_DB:-user_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-user_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bida_network
+
+  mysql-db:
+    image: mysql:8.0
+    container_name: bida-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-order_db}
+      MYSQL_USER: ${MYSQL_USER:-admin}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-admin123}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bida_network
+
+  mongo-db:
+    image: mongo:6-jammy
+    container_name: bida-mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-admin123}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bida_network
+
+  redis-db:
+    image: redis:7-alpine
+    container_name: bida-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bida_network
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: bida-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - bida_network
+    healthcheck:
+      test: ["CMD-SHELL", "echo stat | nc localhost 2181 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: bida-kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bida_network
+
+  # ==========================================
+  # DATABASE REST API SERVICE (CMC / DATA LAYER)
+  # ==========================================
+  data-api-service:
+    build:
+      context: ./services/data-api-service
+    container_name: bida-data-api-service
+    restart: always
+    env_file: .env
+    environment:
+      - POSTGRES_URL=${POSTGRES_URL:-postgresql://admin:admin123@postgres-db:5432/user_db}
+      - MYSQL_URL=${MYSQL_URL:-mysql+pymysql://admin:admin123@mysql-db:3306/order_db}
+      - MONGO_URL=${MONGO_URL:-mongodb://admin:admin123@mongo-db:27017/}
+    ports:
+      - "8005:8000"
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+      mysql-db:
+        condition: service_healthy
+      mongo-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - bida_network
+
+  # ==========================================
+  # MICROSERVICES (PURE BUSINESS LOGIC)
+  # ==========================================
+  user-service:
+    build: 
+      context: ./services/user-service
+    container_name: bida-user-service
+    restart: always
+    env_file: .env
+    environment:
+      - DATABASE_API_URL=${DATABASE_API_URL:-http://data-api-service:8000}
+      - SECRET_KEY=${SECRET_KEY:-bida-cao-cap-secret-key-2024}
+    ports:
+      - "8001:8000"
+    depends_on:
+      data-api-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - bida_network
+
+  catalog-service:
+    build: 
+      context: ./services/catalog-service
+    container_name: bida-catalog-service
+    restart: always
+    env_file: .env
+    environment:
+      - DATABASE_API_URL=${DATABASE_API_URL:-http://data-api-service:8000}
+      - REDIS_URL=${REDIS_URL:-redis://redis-db:6379/0}
+      - ORDER_SERVICE_URL=${ORDER_SERVICE_URL:-http://order-service:8000}
+      - S3_ENDPOINT_URL=${S3_ENDPOINT_URL:-https://s3.cloud.cmctelecom.vn}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME:-bida-caocap-images}
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY:-cmc_access_key_placeholder}
+      - S3_SECRET_KEY=${S3_SECRET_KEY:-cmc_secret_key_placeholder}
+      - S3_REGION=${S3_REGION:-ap-southeast-1}
+      - S3_PUBLIC_URL_PREFIX=${S3_PUBLIC_URL_PREFIX:-}
+    ports:
+      - "8002:8000"
+    depends_on:
+      data-api-service:
+        condition: service_healthy
+      redis-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - bida_network
+
+  cart-service:
+    build: 
+      context: ./services/cart-service
+    container_name: bida-cart-service
+    restart: always
+    env_file: .env
+    environment:
+      - REDIS_URL=${REDIS_URL:-redis://redis-db:6379/0}
+      - CATALOG_SERVICE_URL=${CATALOG_SERVICE_URL:-http://catalog-service:8000}
+      - SECRET_KEY=${SECRET_KEY:-bida-cao-cap-secret-key-2024}
+    ports:
+      - "8003:8000"
+    depends_on:
+      redis-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - bida_network
+
+  order-service:
+    build: 
+      context: ./services/order-service
+    container_name: bida-order-service
+    restart: always
+    env_file: .env
+    environment:
+      - DATABASE_API_URL=${DATABASE_API_URL:-http://data-api-service:8000}
+      - REDIS_URL=${REDIS_URL:-redis://redis-db:6379/0}
+      - KAFKA_BOOTSTRAP=${KAFKA_BOOTSTRAP:-kafka:9092}
+      - CART_SERVICE_URL=${CART_SERVICE_URL:-http://cart-service:8000}
+      - CATALOG_SERVICE_URL=${CATALOG_SERVICE_URL:-http://catalog-service:8000}
+      - SECRET_KEY=${SECRET_KEY:-bida-cao-cap-secret-key-2024}
+    ports:
+      - "8004:8000"
+    depends_on:
+      data-api-service:
+        condition: service_healthy
+      redis-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - bida_network
+
+  notification-worker:
+    build: 
+      context: ./notification-worker
+    container_name: bida-notification-worker
+    restart: always
+    env_file: .env
+    environment:
+      - MONGO_URL=${MONGO_URL:-mongodb://admin:admin123@mongo-db:27017/}
+      - KAFKA_BOOTSTRAP=${KAFKA_BOOTSTRAP:-kafka:9092}
+    depends_on:
+      kafka:
+        condition: service_healthy
+      mongo-db:
+        condition: service_healthy
+    networks:
+      - bida_network
+
+  api-gateway:
+    build: 
+      context: ./services/api-gateway
+    container_name: bida-api-gateway
+    restart: always
+    ports:
+      - "8000:80"
+    depends_on:
+      user-service:
+        condition: service_healthy
+      catalog-service:
+        condition: service_healthy
+      cart-service:
+        condition: service_healthy
+      order-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - bida_network
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: bida-frontend
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    networks:
+      - bida_network
+
+volumes:
+  postgres_data:
+  mysql_data:
+  mongo_data:
+  redis_data:
+
+networks:
+  bida_network:
+    driver: bridge
